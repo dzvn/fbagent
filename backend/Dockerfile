@@ -1,12 +1,18 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1.1
+
 WORKDIR /app
 
-FROM base AS install
+# Copy package files
 COPY package.json bun.lockb* ./
-RUN bun install --frozen-lockfile || bun install
 
-FROM base AS dev
-COPY --from=install /app/node_modules ./node_modules
+# Install dependencies
+RUN bun install
+
+# Copy source code
 COPY . .
+
+# Expose port
 EXPOSE 9000
+
+# Default command
 CMD ["bun", "run", "dev"]

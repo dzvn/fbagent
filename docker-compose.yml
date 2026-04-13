@@ -1,31 +1,31 @@
+version: "3.8"
+
 services:
   postgres:
     image: postgres:15-alpine
     container_name: fbagent-db
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: fbagent
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
-    ports:
-      - "5433:5432"
+      POSTGRES_DB: fbagent
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: fbagent-redis
-    restart: unless-stopped
     ports:
       - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -34,13 +34,22 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: fbagent-backend
-    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - PORT=9000
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/fbagent
+      - REDIS_URL=redis://redis:6379
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.7}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - FB_VERIFY_TOKEN=${FB_VERIFY_TOKEN:-fbagent_verify_2026}
+      - FB_PAGE_ACCESS_TOKEN=${FB_PAGE_ACCESS_TOKEN:-}
     ports:
       - "9001:9000"
-    environment:
-      NODE_ENV: development
-      DATABASE_URL: postgres://postgres:postgres123@postgres:5432/fbagent
-      REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,36 +64,31 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: fbagent-frontend
-    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:9001
     ports:
       - "3000:3000"
-    environment:
-      VITE_API_URL: http://localhost:9001
-    depends_on:
-      - backend
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    depends_on:
+      - backend
 
   worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: fbagent-worker
-    restart: unless-stopped
     command: ["bun", "run", "src/worker.ts"]
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgres://postgres:postgres123@postgres:5432/fbagent
-      REDIS_URL: redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/fbagent
+      - REDIS_URL=redis://redis:6379
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+      - LLM_API_KEY=${LLM_API_KEY:-}
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
+      - postgres
+      - redis
 
 volumes:
   postgres_data:
