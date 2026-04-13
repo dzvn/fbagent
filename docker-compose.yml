@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
     container_name: fbagent-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -36,7 +36,7 @@ services:
     container_name: fbagent-backend
     restart: unless-stopped
     ports:
-      - "9000:9000"
+      - "9001:9000"
     environment:
       NODE_ENV: development
       DATABASE_URL: postgres://postgres:postgres123@postgres:5432/fbagent
@@ -59,7 +59,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      VITE_API_URL: http://localhost:9000
+      VITE_API_URL: http://localhost:9001
     depends_on:
       - backend
     volumes:
@@ -72,7 +72,7 @@ services:
       dockerfile: Dockerfile
     container_name: fbagent-worker
     restart: unless-stopped
-    command: ["bun", "run", "worker.ts"]
+    command: ["bun", "run", "src/worker.ts"]
     environment:
       NODE_ENV: development
       DATABASE_URL: postgres://postgres:postgres123@postgres:5432/fbagent
