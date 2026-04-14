@@ -8,9 +8,10 @@ export interface WorkflowState {
   orderInfo: any;
   response: string | null;
   needsHumanHandoff: boolean;
+  useLLM: boolean;
 }
 
-export function createInitialstate(senderId: string, pageId: string, message: string): WorkflowState {
+export function createInitialstate(senderId: string, pageId: string, message: string, useLLM = false): WorkflowState {
   return {
     messages: [],
     senderId,
@@ -20,29 +21,22 @@ export function createInitialstate(senderId: string, pageId: string, message: st
     orderDetected: false,
     orderInfo: null,
     response: null,
-    needsHumanHandoff: false
+    needsHumanHandoff: false,
+    useLLM
   };
 }
 
-// Classify intent (support both Vietnamese and English)
 function classifyIntent(message: string): string {
   const msg = message.toLowerCase();
-  // Order intent
   if (["mua", "dat", "order", "lay", "can", "muon", "buy", "purchase", "need", "want", "id like"].some(kw => msg.includes(kw))) return "order";
-  // Pricing
   if (["gia", "bao nhieu", "chi phi", "price", "cost", "how much"].some(kw => msg.includes(kw))) return "pricing";
-  // Location
   if (["dia chi", "o dau", "vi tri", "address", "where", "location"].some(kw => msg.includes(kw))) return "location";
-  // Hours
   if (["gio mo cua", "may gio", "khi nao", "hours", "open", "close", "when"].some(kw => msg.includes(kw))) return "hours";
-  // Support
   if (["doi tra", "bao hanh", "ket noi", "return", "warranty", "support", "refund"].some(kw => msg.includes(kw))) return "support";
-  // Human handoff
   if (["gap nguoi", "gap admin", "human", "staff", "agent", "support team"].some(kw => msg.includes(kw))) return "human_handoff";
   return "general";
 }
 
-// Process order
 function processOrder(message: string): { response: string; orderDetected: boolean; orderInfo: any } {
   const phoneRegex = /(0[3-9]\d{8}|0[1-9]\d{8}|\+84\d{9})/;
   const phoneMatch = message.match(phoneRegex);
@@ -62,7 +56,6 @@ function processOrder(message: string): { response: string; orderDetected: boole
   };
 }
 
-// Search knowledge base
 async function searchKnowledge(query: string): Promise<{ response: string | null; needsHumanHandoff: boolean }> {
   try {
     const response = await fetch("http://localhost:9000/api/knowledge/search?q=" + encodeURIComponent(query));
@@ -76,7 +69,6 @@ async function searchKnowledge(query: string): Promise<{ response: string | null
   }
 }
 
-// General response
 function generalResponse(): string {
   const responses = [
     "Cảm ơn bạn đã nhắn tin. Mình có thể giúp gì cho bạn?",
@@ -86,15 +78,35 @@ function generalResponse(): string {
   return responses[Math.floor(Math.random() * responses.length)];
 }
 
-// Human handoff
 function humanHandoff(): string {
   return "Dạ vấn đề của bạn cần sự hỗ trợ từ đội ngũ. Mình sẽ chuyển tin nhắn đến admin và họ sẽ liên hệ bạn sớm nhé!";
 }
 
-// Main workflow processor
 export async function processWorkflow(state: WorkflowState): Promise<WorkflowState> {
   state.intent = classifyIntent(state.currentMessage);
   
+  // Nếu là general hoặc cần LLM, sẽ gọi LLM để trả lời
+  if (state.useLLM || state.intent === "general") {
+    try {
+      const response = await fetch("http://localhost:9000/api/agent/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          message: state.currentMessage,
+          conversationHistory: state.messages
+        })
+      });
+      const result = await response.json();
+      if (result.response && result.source === "llm-agent") {
+        state.response = result.response;
+        return state;
+      }
+    } catch (error) {
+      console.error("LLM call failed, falling back to rules:", error);
+    }
+  }
+  
+  // Fallback sang rule-based
   switch (state.intent) {
     case "order": {
       const result = processOrder(state.currentMessage);
@@ -128,8 +140,8 @@ export async function processWorkflow(state: WorkflowState): Promise<WorkflowSta
 
 export function buildAgentWorkflow() {
   return {
-    invoke: async (input: Partial<WorkflowState> & { currentMessage: string; senderId: string; pageId: string }) => {
-      const state = createInitialstate(input.senderId, input.pageId, input.currentMessage);
+    invoke: async (input: Partial<WorkflowState> & { currentMessage: string; senderId: string; pageId: string; useLLM?: boolean }) => {
+      const state = createInitialstate(input.senderId, input.pageId, input.currentMessage, input.useLLM !== false);
       return await processWorkflow(state);
     }
   };

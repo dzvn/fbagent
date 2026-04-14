@@ -1,8 +1,8 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { ChatOllama } from "@langchain/ollama";
-import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 
 import { orderDetectionTool, knowledgeSearchTool, saveConversationTool } from "../tools/order-detection";
 
@@ -17,13 +17,11 @@ export interface AgentConfig {
   maxTokens?: number;
 }
 
-// Create LLM based on config
 export function createLLM(config: AgentConfig): BaseChatModel {
   const { provider, model, apiKey, baseUrl, temperature = 0.7 } = config;
   
   switch (provider) {
     case "deepseek":
-      // DeepSeek uses OpenAI-compatible API
       return new ChatOpenAI({
         modelName: model || "deepseek-chat",
         openAIApiKey: apiKey || process.env.DEEPSEEK_API_KEY,
@@ -65,11 +63,26 @@ export function createLLM(config: AgentConfig): BaseChatModel {
   }
 }
 
-// Create ReAct agent with tools
+// Simple chat without tools - just LLM response
+export async function chatWithLLM(config: AgentConfig, message: string, conversationHistory: string[] = []): Promise<string> {
+  const llm = createLLM(config);
+  
+  const messages: BaseMessage[] = [
+    new SystemMessage("Bạn là trợ lý ảo thân thiện cho Facebook Page của cửa hàng. Hãy trả lời ngắn gọn, hữu ích và bằng tiếng Việt trừ khi khách hỏi bằng tiếng Anh."),
+    ...conversationHistory.map((msg, i) => new HumanMessage(msg)),
+    new HumanMessage(message)
+  ];
+  
+  const result = await llm.invoke(messages);
+  return result.content as string;
+}
+
 export async function createAgent(config: AgentConfig) {
   const llm = createLLM(config);
   const tools = [orderDetectionTool, knowledgeSearchTool, saveConversationTool];
   
+  // ReAct agent with tools (for future use)
+  const { createReactAgent } = await import("@langchain/langgraph/prebuilt");
   const agent = createReactAgent({
     llm,
     tools,
@@ -79,13 +92,12 @@ export async function createAgent(config: AgentConfig) {
   return agent;
 }
 
-// Default agent config from environment
 export function getDefaultAgentConfig(): AgentConfig {
   return {
-    provider: (process.env.LLM_PROVIDER as ModelProvider) || "openai",
-    model: process.env.LLM_MODEL,
-    apiKey: process.env.LLM_API_KEY,
-    baseUrl: process.env.LLM_BASE_URL,
+    provider: (process.env.LLM_PROVIDER as ModelProvider) || "deepseek",
+    model: process.env.LLM_MODEL || "deepseek-chat",
+    apiKey: process.env.LLM_API_KEY || process.env.DEEPSEEK_API_KEY,
+    baseUrl: process.env.LLM_BASE_URL || "https://api.deepseek.com",
     temperature: parseFloat(process.env.LLM_TEMPERATURE || "0.7")
   };
 }

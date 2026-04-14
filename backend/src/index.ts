@@ -4,18 +4,13 @@ import { knowledgeRoutes } from "./modules/knowledge";
 import { autoReplyRoutes } from "./modules/auto-reply";
 import { adminRoutes } from "./modules/admin";
 import { buildAgentWorkflow } from "./langgraph/workflow";
-import { createAgent, getDefaultAgentConfig, type AgentConfig } from "./agent/agent";
-import { SUPPORTED_MODELS, getModelConfig } from "./config/models";
+import { chatWithLLM, getDefaultAgentConfig, type AgentConfig } from "./agent/agent";
+import { SUPPORTED_MODELS } from "./config/models";
 
-// Initialize LangGraph workflow
 const agentWorkflow = buildAgentWorkflow();
-
-// Agent config store
 let currentAgentConfig: AgentConfig = getDefaultAgentConfig();
-let agentModel: any = null;
 
-// Process message with LangGraph
-async function processWithLangGraph(message: string, senderId: string, pageId: string) {
+async function processWithLangGraph(message: string, senderId: string, pageId: string, useLLM = true) {
   try {
     const result = await agentWorkflow.invoke({
       messages: [],
@@ -26,7 +21,8 @@ async function processWithLangGraph(message: string, senderId: string, pageId: s
       orderDetected: false,
       orderInfo: null,
       response: null,
-      needsHumanHandoff: false
+      needsHumanHandoff: false,
+      useLLM
     });
     
     return {
@@ -35,7 +31,7 @@ async function processWithLangGraph(message: string, senderId: string, pageId: s
       orderDetected: result.orderDetected,
       orderInfo: result.orderInfo,
       needsHumanHandoff: result.needsHumanHandoff,
-      source: "langgraph"
+      source: useLLM ? "llm-enhanced" : "langgraph"
     };
   } catch (error) {
     console.error("LangGraph error:", error);
@@ -49,22 +45,11 @@ async function processWithLangGraph(message: string, senderId: string, pageId: s
   }
 }
 
-// Process with LLM agent (ReAct)
 async function processWithLLMAgent(message: string, conversationHistory: string[]) {
-  if (!agentModel) {
-    agentModel = await createAgent(currentAgentConfig);
-  }
-  
   try {
-    const result = await agentModel.invoke({
-      messages: [
-        { role: "system", content: "Bạn là trợ lý ảo cho Facebook Page. Hãy trả lời thân thiện và hữu ích." },
-        { role: "user", content: message }
-      ]
-    });
-    
+    const response = await chatWithLLM(currentAgentConfig, message, conversationHistory);
     return {
-      response: result.content?.toString() || "Xin lỗi, mình chưa hiểu.",
+      response,
       source: "llm-agent",
       model: currentAgentConfig.model
     };
@@ -78,7 +63,6 @@ async function processWithLLMAgent(message: string, conversationHistory: string[
 }
 
 const app = new Elysia()
-  // CORS for all origins
   .onRequest(({ set }) => {
     set.headers["Access-Control-Allow-Origin"] = "*";
     set.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS,PATCH";
@@ -86,32 +70,26 @@ const app = new Elysia()
     set.headers["Access-Control-Allow-Credentials"] = "true";
     set.headers["Access-Control-Max-Age"] = "86400";
   })
-  // Handle OPTIONS preflight
-  .options("/*", () => {
-    return { status: "ok" };
-  })
+  .options("/*", () => ({ status: "ok" }))
   .get("/health", () => ({
     status: "ok",
     timestamp: new Date().toISOString(),
     service: "fbagent-backend",
-    version: "0.2.0-langgraph"
+    version: "0.2.1-llm"
   }))
   
-  // LangGraph endpoints
   .post("/api/langgraph/process", async ({ body }: { body: any }) => {
-    const { message, senderId, pageId } = body;
-    const result = await processWithLangGraph(message, senderId || "unknown", pageId || "unknown");
+    const { message, senderId, pageId, useLLM = true } = body;
+    const result = await processWithLangGraph(message, senderId || "unknown", pageId || "unknown", useLLM);
     return result;
   })
   
-  // LLM Agent endpoints
   .post("/api/agent/chat", async ({ body }: { body: any }) => {
     const { message, conversationHistory = [] } = body;
     const result = await processWithLLMAgent(message, conversationHistory);
     return result;
   })
   
-  // Model configuration
   .get("/api/models", () => ({
     models: SUPPORTED_MODELS,
     currentConfig: currentAgentConfig
@@ -126,7 +104,6 @@ const app = new Elysia()
       baseUrl: baseUrl || currentAgentConfig.baseUrl,
       temperature: temperature || currentAgentConfig.temperature
     };
-    agentModel = null;
     return { success: true, config: currentAgentConfig };
   })
   
@@ -137,8 +114,8 @@ const app = new Elysia()
   .listen(9000);
 
 console.log("🚀 Backend running at http://localhost:9000");
-console.log("🧠 LangGraph: http://localhost:9000/api/langgraph/process");
-console.log("🤖 LLM Agent: http://localhost:9000/api/agent/chat");
+console.log("🧠 LangGraph (with LLM): http://localhost:9000/api/langgraph/process");
+console.log("🤖 LLM Agent (Direct): http://localhost:9000/api/agent/chat");
 console.log("📦 Models: http://localhost:9000/api/models");
 console.log("🔓 CORS: Enabled for all origins (*)");
 
