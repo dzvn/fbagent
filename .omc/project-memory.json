@@ -1,0 +1,382 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1776147306186,
+  "projectRoot": "/home/cpt0912/WORKS/INVIDUAL/dzvn/fbagent",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "backend": {
+      "path": "backend",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1776147306154,
+      "keyFiles": [
+        "Dockerfile",
+        "package.json",
+        "tsconfig.json"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1776147306167,
+      "keyFiles": []
+    },
+    "frontend": {
+      "path": "frontend",
+      "purpose": null,
+      "fileCount": 6,
+      "lastAccessed": 1776147306173,
+      "keyFiles": [
+        "Dockerfile",
+        "index.html",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.node.json"
+      ]
+    },
+    "worker": {
+      "path": "worker",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1776147306173,
+      "keyFiles": []
+    },
+    "backend/dist": {
+      "path": "backend/dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 4,
+      "lastAccessed": 1776147306173,
+      "keyFiles": [
+        "index.d.ts",
+        "index.js",
+        "worker.d.ts"
+      ]
+    },
+    "backend/node_modules": {
+      "path": "backend/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 0,
+      "lastAccessed": 1776147306173,
+      "keyFiles": []
+    },
+    "backend/src": {
+      "path": "backend/src",
+      "purpose": "Source code",
+      "fileCount": 2,
+      "lastAccessed": 1776147306177,
+      "keyFiles": [
+        "index.ts",
+        "worker.ts"
+      ]
+    },
+    "frontend/node_modules": {
+      "path": "frontend/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 0,
+      "lastAccessed": 1776147306180,
+      "keyFiles": []
+    },
+    "frontend/public": {
+      "path": "frontend/public",
+      "purpose": "Public files",
+      "fileCount": 1,
+      "lastAccessed": 1776147306181,
+      "keyFiles": [
+        "test.html"
+      ]
+    },
+    "frontend/src": {
+      "path": "frontend/src",
+      "purpose": "Source code",
+      "fileCount": 2,
+      "lastAccessed": 1776147306186,
+      "keyFiles": [
+        "App.tsx",
+        "main.tsx"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "SPEC.md",
+      "accessCount": 2,
+      "lastAccessed": 1776151472570,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 2,
+      "lastAccessed": 1776151472627,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/agent/agent.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151485013,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/langgraph/workflow.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151485043,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151485066,
+      "type": "file"
+    },
+    {
+      "path": "backend/package.json",
+      "accessCount": 2,
+      "lastAccessed": 1776151485115,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/db/schema.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151485171,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/modules/webhook/index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151485224,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/tools/order-detection.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151550568,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/middleware/apiKey.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151550630,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/middleware/rateLimit.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151550678,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1776151559139,
+      "type": "file"
+    },
+    {
+      "path": "frontend/package.json",
+      "accessCount": 2,
+      "lastAccessed": 1776151559193,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/middleware/logger.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151559210,
+      "type": "file"
+    },
+    {
+      "path": ".env.example",
+      "accessCount": 2,
+      "lastAccessed": 1776151559222,
+      "type": "file"
+    },
+    {
+      "path": "docker-compose.yml",
+      "accessCount": 2,
+      "lastAccessed": 1776151559247,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/worker.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151650777,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/config/models.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776151650804,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/modules/knowledge/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776147405934,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1776147414576,
+      "type": "file"
+    },
+    {
+      "path": "backend/Dockerfile",
+      "accessCount": 1,
+      "lastAccessed": 1776147414635,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/modules/conversation.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776147428874,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/modules/auto-reply/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776147428905,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/modules/tenant.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776147428931,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/modules/analytics.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776147428956,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/modules/admin/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776147429013,
+      "type": "file"
+    },
+    {
+      "path": "LANGCHAIN_INTEGRATION.md",
+      "accessCount": 1,
+      "lastAccessed": 1776151472615,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/services/facebook.service.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151550611,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/services/message-processor.service.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151550659,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/langgraph/nodes/classify.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151550730,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/tools/knowledge-search.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151550781,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/queue/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151559181,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/langgraph/state.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151595467,
+      "type": "file"
+    },
+    {
+      "path": "backend/tsconfig.json",
+      "accessCount": 1,
+      "lastAccessed": 1776151595528,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/services/knowledge.service.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151595581,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/langgraph/nodes/search-knowledge.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151618406,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/langgraph/nodes/generate-response.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151618432,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/langgraph/__tests__/workflow.test.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151618449,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/repositories/knowledge.repository.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151618465,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/queue/job-types.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151618510,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/langgraph/nodes/detect-order.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151618566,
+      "type": "file"
+    },
+    {
+      "path": "backend/src/repositories/base.repository.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776151650761,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
