@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // Use host IP instead of localhost for Docker
-const API_BASE = import.meta.env.VITE_API_URL || "http://192.168.0.111:9001";
+const API_BASE = import.meta.env.VITE_API_URL || "http://100.90.217.46:9001";
 
 function App() {
   const [activeTab, setActiveTab] = useState("langgraph");
