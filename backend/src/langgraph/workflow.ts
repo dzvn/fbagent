@@ -1,17 +1,52 @@
-export interface WorkflowState {
-  messages: string[];
-  senderId: string;
-  pageId: string;
-  currentMessage: string;
-  intent: string | null;
-  orderDetected: boolean;
-  orderInfo: any;
-  response: string | null;
-  needsHumanHandoff: boolean;
-  useLLM: boolean;
+import { StateGraph, END, START } from "@langchain/langgraph";
+import { AgentStateAnnotation, type AgentState } from "./state";
+import { classifyNode, routeAfterClassify } from "./nodes/classify";
+import { detectOrderNode } from "./nodes/detect-order";
+import { searchKnowledgeNode } from "./nodes/search-knowledge";
+import { generateResponseNode, handoffNode } from "./nodes/generate-response";
+
+/**
+ * Build and compile the LangGraph StateGraph workflow
+ * 
+ * Node flow:
+ * START -> classify -> (conditional routing based on intent)
+ *   - order -> detect_order -> END
+ *   - pricing/location/hours/support -> search_knowledge -> generate_response -> END
+ *   - human_handoff -> handoff -> END
+ *   - general -> generate_response -> END
+ */
+export function buildAgentWorkflow() {
+  const workflow = new StateGraph(AgentStateAnnotation)
+    .addNode("classify", classifyNode)
+    .addNode("detect_order", detectOrderNode)
+    .addNode("search_knowledge", searchKnowledgeNode)
+    .addNode("generate_response", generateResponseNode)
+    .addNode("handoff", handoffNode)
+    .addEdge(START, "classify")
+    .addConditionalEdges("classify", routeAfterClassify, {
+      detect_order: "detect_order",
+      search_knowledge: "search_knowledge",
+      handoff: "handoff",
+      generate_response: "generate_response",
+    })
+    .addEdge("detect_order", END)
+    .addEdge("search_knowledge", "generate_response")
+    .addEdge("generate_response", END)
+    .addEdge("handoff", END);
+  
+  return workflow.compile();
 }
 
-export function createInitialstate(senderId: string, pageId: string, message: string, useLLM = false): WorkflowState {
+/**
+ * Create initial state for workflow invocation
+ */
+export function createInitialState(
+  senderId: string,
+  pageId: string,
+  message: string,
+  useLLM = true,
+  conversationId?: string
+): Partial<AgentState> {
   return {
     messages: [],
     senderId,
@@ -20,129 +55,57 @@ export function createInitialstate(senderId: string, pageId: string, message: st
     intent: null,
     orderDetected: false,
     orderInfo: null,
+    kbResults: [],
     response: null,
     needsHumanHandoff: false,
-    useLLM
+    useLLM,
+    conversationId: conversationId || null,
   };
 }
 
-function classifyIntent(message: string): string {
-  const msg = message.toLowerCase();
-  if (["mua", "dat", "order", "lay", "can", "muon", "buy", "purchase", "need", "want", "id like"].some(kw => msg.includes(kw))) return "order";
-  if (["gia", "bao nhieu", "chi phi", "price", "cost", "how much"].some(kw => msg.includes(kw))) return "pricing";
-  if (["dia chi", "o dau", "vi tri", "address", "where", "location"].some(kw => msg.includes(kw))) return "location";
-  if (["gio mo cua", "may gio", "khi nao", "hours", "open", "close", "when"].some(kw => msg.includes(kw))) return "hours";
-  if (["doi tra", "bao hanh", "ket noi", "return", "warranty", "support", "refund"].some(kw => msg.includes(kw))) return "support";
-  if (["gap nguoi", "gap admin", "human", "staff", "agent", "support team"].some(kw => msg.includes(kw))) return "human_handoff";
-  return "general";
-}
-
-function processOrder(message: string): { response: string; orderDetected: boolean; orderInfo: any } {
-  const phoneRegex = /(0[3-9]\d{8}|0[1-9]\d{8}|\+84\d{9})/;
-  const phoneMatch = message.match(phoneRegex);
+/**
+ * Process a message through the LangGraph workflow
+ * Main entry point for the workflow
+ */
+export async function processMessage(
+  senderId: string,
+  pageId: string,
+  message: string,
+  useLLM = true,
+  conversationId?: string
+): Promise<{
+  response: string;
+  intent: string | null;
+  orderDetected: boolean;
+  orderInfo: any;
+  needsHumanHandoff: boolean;
+  source: string;
+}> {
+  const workflow = buildAgentWorkflow();
+  const initialState = createInitialState(senderId, pageId, message, useLLM, conversationId);
   
-  if (!phoneMatch) {
+  try {
+    const result = await workflow.invoke(initialState);
+    
     return {
-      orderDetected: true,
-      response: "Dạ mình thấy bạn muốn đặt hàng. Để mình hỗ trợ bạn, bạn vui lòng để lại số điện thoại nhé!",
-      orderInfo: null
+      response: result.response || "Xin lỗi, mình chưa hiểu câu hỏi của bạn.",
+      intent: result.intent,
+      orderDetected: result.orderDetected || false,
+      orderInfo: result.orderInfo,
+      needsHumanHandoff: result.needsHumanHandoff || false,
+      source: useLLM ? "llm-enhanced" : "langgraph",
+    };
+  } catch (error) {
+    console.error("Workflow execution error:", error);
+    return {
+      response: "Xin lỗi, hiện tại mình đang gặp sự cố. Bạn thử lại sau nhé!",
+      intent: null,
+      orderDetected: false,
+      orderInfo: null,
+      needsHumanHandoff: true,
+      source: "error",
     };
   }
-  
-  return {
-    orderDetected: true,
-    response: "Cảm ơn bạn! Mình đã nhận được thông tin. Số điện thoại: " + phoneMatch[0] + ". Bạn cần đặt sản phẩm nào ạ?",
-    orderInfo: { phone: phoneMatch[0], rawMessage: message }
-  };
 }
 
-async function searchKnowledge(query: string): Promise<{ response: string | null; needsHumanHandoff: boolean }> {
-  try {
-    const response = await fetch("http://localhost:9000/api/knowledge/search?q=" + encodeURIComponent(query));
-    const results = await response.json();
-    if (results && results.length > 0) {
-      return { response: results[0].content, needsHumanHandoff: false };
-    }
-    return { response: null, needsHumanHandoff: true };
-  } catch (error) {
-    return { response: null, needsHumanHandoff: true };
-  }
-}
-
-function generalResponse(): string {
-  const responses = [
-    "Cảm ơn bạn đã nhắn tin. Mình có thể giúp gì cho bạn?",
-    "Mình đã nhận được tin nhắn của bạn. Bạn cần hỗ trợ thêm không?",
-    "Dạ mình nghe đây ạ. Bạn cần mình giúp gì không?"
-  ];
-  return responses[Math.floor(Math.random() * responses.length)];
-}
-
-function humanHandoff(): string {
-  return "Dạ vấn đề của bạn cần sự hỗ trợ từ đội ngũ. Mình sẽ chuyển tin nhắn đến admin và họ sẽ liên hệ bạn sớm nhé!";
-}
-
-export async function processWorkflow(state: WorkflowState): Promise<WorkflowState> {
-  state.intent = classifyIntent(state.currentMessage);
-  
-  // Nếu là general hoặc cần LLM, sẽ gọi LLM để trả lời
-  if (state.useLLM || state.intent === "general") {
-    try {
-      const response = await fetch("http://localhost:9000/api/agent/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          message: state.currentMessage,
-          conversationHistory: state.messages
-        })
-      });
-      const result = await response.json();
-      if (result.response && result.source === "llm-agent") {
-        state.response = result.response;
-        return state;
-      }
-    } catch (error) {
-      console.error("LLM call failed, falling back to rules:", error);
-    }
-  }
-  
-  // Fallback sang rule-based
-  switch (state.intent) {
-    case "order": {
-      const result = processOrder(state.currentMessage);
-      state.orderDetected = result.orderDetected;
-      state.orderInfo = result.orderInfo;
-      state.response = result.response;
-      break;
-    }
-    case "pricing":
-    case "location":
-    case "hours":
-    case "support": {
-      const result = await searchKnowledge(state.currentMessage);
-      state.response = result.response || generalResponse();
-      state.needsHumanHandoff = result.needsHumanHandoff;
-      break;
-    }
-    case "human_handoff": {
-      state.response = humanHandoff();
-      state.needsHumanHandoff = true;
-      break;
-    }
-    default: {
-      state.response = generalResponse();
-      break;
-    }
-  }
-  
-  return state;
-}
-
-export function buildAgentWorkflow() {
-  return {
-    invoke: async (input: Partial<WorkflowState> & { currentMessage: string; senderId: string; pageId: string; useLLM?: boolean }) => {
-      const state = createInitialstate(input.senderId, input.pageId, input.currentMessage, input.useLLM !== false);
-      return await processWorkflow(state);
-    }
-  };
-}
+export { buildAgentWorkflow as buildWorkflow };
