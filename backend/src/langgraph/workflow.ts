@@ -1,4 +1,3 @@
-// Simple workflow implementation without complex StateGraph
 export interface WorkflowState {
   messages: string[];
   senderId: string;
@@ -25,15 +24,21 @@ export function createInitialstate(senderId: string, pageId: string, message: st
   };
 }
 
-// Classify intent
+// Classify intent (support both Vietnamese and English)
 function classifyIntent(message: string): string {
   const msg = message.toLowerCase();
-  if (["mua", "dat", "order", "lay", "can", "muon"].some(kw => msg.includes(kw))) return "order";
-  if (["gia", "bao nhieu", "chi phi"].some(kw => msg.includes(kw))) return "pricing";
-  if (["dia chi", "o dau", "vi tri"].some(kw => msg.includes(kw))) return "location";
-  if (["gio mo cua", "may gio", "khi nao"].some(kw => msg.includes(kw))) return "hours";
-  if (["doi tra", "bao hanh", "ket noi"].some(kw => msg.includes(kw))) return "support";
-  if (["gap nguoi", "gap admin", "human", "staff"].some(kw => msg.includes(kw))) return "human_handoff";
+  // Order intent
+  if (["mua", "dat", "order", "lay", "can", "muon", "buy", "purchase", "need", "want", "id like"].some(kw => msg.includes(kw))) return "order";
+  // Pricing
+  if (["gia", "bao nhieu", "chi phi", "price", "cost", "how much"].some(kw => msg.includes(kw))) return "pricing";
+  // Location
+  if (["dia chi", "o dau", "vi tri", "address", "where", "location"].some(kw => msg.includes(kw))) return "location";
+  // Hours
+  if (["gio mo cua", "may gio", "khi nao", "hours", "open", "close", "when"].some(kw => msg.includes(kw))) return "hours";
+  // Support
+  if (["doi tra", "bao hanh", "ket noi", "return", "warranty", "support", "refund"].some(kw => msg.includes(kw))) return "support";
+  // Human handoff
+  if (["gap nguoi", "gap admin", "human", "staff", "agent", "support team"].some(kw => msg.includes(kw))) return "human_handoff";
   return "general";
 }
 
@@ -88,10 +93,8 @@ function humanHandoff(): string {
 
 // Main workflow processor
 export async function processWorkflow(state: WorkflowState): Promise<WorkflowState> {
-  // Step 1: Classify intent
   state.intent = classifyIntent(state.currentMessage);
   
-  // Step 2: Route by intent
   switch (state.intent) {
     case "order": {
       const result = processOrder(state.currentMessage);
@@ -123,7 +126,6 @@ export async function processWorkflow(state: WorkflowState): Promise<WorkflowSta
   return state;
 }
 
-// Simple compile function (returns the processor)
 export function buildAgentWorkflow() {
   return {
     invoke: async (input: Partial<WorkflowState> & { currentMessage: string; senderId: string; pageId: string }) => {

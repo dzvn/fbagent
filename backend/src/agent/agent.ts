@@ -6,7 +6,7 @@ import type { BaseChatModel } from "@langchain/core/language_models/chat_models"
 
 import { orderDetectionTool, knowledgeSearchTool, saveConversationTool } from "../tools/order-detection";
 
-export type ModelProvider = "openai" | "anthropic" | "ollama" | "custom";
+export type ModelProvider = "openai" | "anthropic" | "ollama" | "custom" | "deepseek";
 
 export interface AgentConfig {
   provider: ModelProvider;
@@ -22,6 +22,15 @@ export function createLLM(config: AgentConfig): BaseChatModel {
   const { provider, model, apiKey, baseUrl, temperature = 0.7 } = config;
   
   switch (provider) {
+    case "deepseek":
+      // DeepSeek uses OpenAI-compatible API
+      return new ChatOpenAI({
+        modelName: model || "deepseek-chat",
+        openAIApiKey: apiKey || process.env.DEEPSEEK_API_KEY,
+        configuration: { baseURL: baseUrl || "https://api.deepseek.com" },
+        temperature
+      });
+    
     case "openai":
       return new ChatOpenAI({
         modelName: model || "gpt-4o-mini",
@@ -44,7 +53,6 @@ export function createLLM(config: AgentConfig): BaseChatModel {
       });
     
     case "custom":
-      // Custom OpenAI-compatible endpoint
       return new ChatOpenAI({
         modelName: model || "custom-model",
         openAIApiKey: apiKey || "not-needed",
