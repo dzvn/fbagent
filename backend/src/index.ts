@@ -6,6 +6,7 @@ import { adminRoutes } from "./modules/admin";
 import { buildAgentWorkflow } from "./langgraph/workflow";
 import { chatWithLLM, getDefaultAgentConfig, type AgentConfig } from "./agent/agent";
 import { SUPPORTED_MODELS } from "./config/models";
+import { createApiKeyMiddleware } from "./middleware/apiKey";
 
 const agentWorkflow = buildAgentWorkflow();
 let currentAgentConfig: AgentConfig = getDefaultAgentConfig();
@@ -77,11 +78,15 @@ const app = new Elysia()
   .onRequest(({ set }) => {
     set.headers["Access-Control-Allow-Origin"] = "*";
     set.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS,PATCH";
-    set.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,X-Requested-With";
+    set.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,X-Requested-With,x-api-key";
     set.headers["Access-Control-Allow-Credentials"] = "true";
     set.headers["Access-Control-Max-Age"] = "86400";
   })
   .options("/*", () => ({ status: "ok" }))
+  
+  // Apply API key middleware to protected routes
+  .use(createApiKeyMiddleware())
+  
   .get("/health", () => ({
     status: "ok",
     timestamp: new Date().toISOString(),
@@ -125,6 +130,7 @@ const app = new Elysia()
   .listen(9000);
 
 console.log("🚀 Backend running at http://localhost:9000");
+console.log("🔒 API Key Auth: Enabled for protected endpoints");
 console.log("🧠 LangGraph (with LLM): http://localhost:9000/api/langgraph/process");
 console.log("🤖 LLM Agent (Direct): http://localhost:9000/api/agent/chat");
 console.log("📦 Models: http://localhost:9000/api/models");
