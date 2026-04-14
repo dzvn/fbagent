@@ -6,6 +6,9 @@ import { adminRoutes } from "./modules/admin";
 import { buildAgentWorkflow } from "./langgraph/workflow";
 import { chatWithLLM, getDefaultAgentConfig, type AgentConfig } from "./agent/agent";
 import { SUPPORTED_MODELS } from "./config/models";
+import { analyticsRoutes } from "./modules/analytics";
+import { tenantRoutes } from "./modules/tenant";
+import { conversationRoutes } from "./modules/conversation";
 import { createApiKeyMiddleware } from "./middleware/apiKey";
 import { createRateLimitMiddleware } from "./middleware/rateLimit";
 import { createLogger, generateRequestId, createRequestLogger, appLogger } from "./middleware/logger";
@@ -106,7 +109,7 @@ const app = new Elysia()
     const startTime = requestLogger.onRequest(requestId, request.method, url.pathname);
     
     // Store in context for later use
-    return { requestId, startTime, method: request.method, path: url.pathname } as any;
+    // Context stored for logging
   })
   .options("/*", () => ({ status: "ok" }))
   
@@ -188,6 +191,9 @@ const app = new Elysia()
   .use(knowledgeRoutes)
   .use(autoReplyRoutes)
   .use(adminRoutes)
+  .use(analyticsRoutes)
+  .use(tenantRoutes)
+  .use(conversationRoutes)
   .listen(9000);
 
 logger.info("🚀 Backend started", {
