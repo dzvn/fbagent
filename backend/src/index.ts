@@ -78,10 +78,17 @@ async function processWithLLMAgent(message: string, conversationHistory: string[
 }
 
 const app = new Elysia()
+  // CORS for all origins
   .onRequest(({ set }) => {
     set.headers["Access-Control-Allow-Origin"] = "*";
-    set.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS";
-    set.headers["Access-Control-Allow-Headers"] = "Content-Type";
+    set.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS,PATCH";
+    set.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,X-Requested-With";
+    set.headers["Access-Control-Allow-Credentials"] = "true";
+    set.headers["Access-Control-Max-Age"] = "86400";
+  })
+  // Handle OPTIONS preflight
+  .options("/*", () => {
+    return { status: "ok" };
   })
   .get("/health", () => ({
     status: "ok",
@@ -119,7 +126,7 @@ const app = new Elysia()
       baseUrl: baseUrl || currentAgentConfig.baseUrl,
       temperature: temperature || currentAgentConfig.temperature
     };
-    agentModel = null; // Reset agent to recreate with new config
+    agentModel = null;
     return { success: true, config: currentAgentConfig };
   })
   
@@ -133,5 +140,6 @@ console.log("🚀 Backend running at http://localhost:9000");
 console.log("🧠 LangGraph: http://localhost:9000/api/langgraph/process");
 console.log("🤖 LLM Agent: http://localhost:9000/api/agent/chat");
 console.log("📦 Models: http://localhost:9000/api/models");
+console.log("🔓 CORS: Enabled for all origins (*)");
 
 export type App = typeof app;
