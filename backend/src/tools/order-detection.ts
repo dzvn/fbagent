@@ -50,36 +50,3 @@ export const orderDetectionTool = tool(
     })
   }
 );
-
-export const knowledgeSearchTool = tool(
-  async (input: { query: string }) => {
-    try {
-      const response = await fetch("http://localhost:9000/api/knowledge/search?q=" + encodeURIComponent(input.query));
-      const results = await response.json();
-      return { success: true, results: results.slice(0, 3), count: results.length };
-    } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : "Search failed", results: [] };
-    }
-  },
-  {
-    name: "search_knowledge_base",
-    description: "Search knowledge base for relevant information",
-    schema: z.object({ query: z.string().describe("Search query") })
-  }
-);
-
-export const saveConversationTool = tool(
-  async (input: { senderId: string; pageId: string; message: string; response: string }) => {
-    return { success: true, conversationId: "conv_" + Date.now(), timestamp: new Date().toISOString() };
-  },
-  {
-    name: "save_conversation",
-    description: "Save conversation to database",
-    schema: z.object({
-      senderId: z.string(),
-      pageId: z.string(),
-      message: z.string(),
-      response: z.string()
-    })
-  }
-);
