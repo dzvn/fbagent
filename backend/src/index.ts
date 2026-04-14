@@ -10,6 +10,17 @@ import { SUPPORTED_MODELS } from "./config/models";
 const agentWorkflow = buildAgentWorkflow();
 let currentAgentConfig: AgentConfig = getDefaultAgentConfig();
 
+// Helper to sanitize config for frontend (excludes sensitive data)
+function sanitizeConfig(config: AgentConfig) {
+  return {
+    provider: config.provider,
+    model: config.model,
+    baseUrl: config.baseUrl,
+    temperature: config.temperature
+    // apiKey is intentionally excluded for security
+  };
+}
+
 async function processWithLangGraph(message: string, senderId: string, pageId: string, useLLM = true) {
   try {
     const result = await agentWorkflow.invoke({
@@ -92,7 +103,7 @@ const app = new Elysia()
   
   .get("/api/models", () => ({
     models: SUPPORTED_MODELS,
-    currentConfig: currentAgentConfig
+    currentConfig: sanitizeConfig(currentAgentConfig)
   }))
   
   .post("/api/models/config", ({ body }: { body: any }) => {
@@ -104,7 +115,7 @@ const app = new Elysia()
       baseUrl: baseUrl || currentAgentConfig.baseUrl,
       temperature: temperature || currentAgentConfig.temperature
     };
-    return { success: true, config: currentAgentConfig };
+    return { success: true, config: sanitizeConfig(currentAgentConfig) };
   })
   
   .use(webhookRoutes)
