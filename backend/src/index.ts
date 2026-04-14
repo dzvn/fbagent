@@ -7,6 +7,7 @@ import { buildAgentWorkflow } from "./langgraph/workflow";
 import { chatWithLLM, getDefaultAgentConfig, type AgentConfig } from "./agent/agent";
 import { SUPPORTED_MODELS } from "./config/models";
 import { createApiKeyMiddleware } from "./middleware/apiKey";
+import { createRateLimitMiddleware } from "./middleware/rateLimit";
 
 const agentWorkflow = buildAgentWorkflow();
 let currentAgentConfig: AgentConfig = getDefaultAgentConfig();
@@ -84,6 +85,13 @@ const app = new Elysia()
   })
   .options("/*", () => ({ status: "ok" }))
   
+  // Apply rate limiting middleware (skip /health endpoint)
+  .use(createRateLimitMiddleware({
+    windowMs: 60000,  // 1 minute
+    max: 100,         // 100 requests per minute
+    skipPaths: ["/health"]
+  }))
+  
   // Apply API key middleware to protected routes
   .use(createApiKeyMiddleware())
   
@@ -131,6 +139,7 @@ const app = new Elysia()
 
 console.log("🚀 Backend running at http://localhost:9000");
 console.log("🔒 API Key Auth: Enabled for protected endpoints");
+console.log("⚡ Rate Limiting: 100 req/min per IP (skip /health)");
 console.log("🧠 LangGraph (with LLM): http://localhost:9000/api/langgraph/process");
 console.log("🤖 LLM Agent (Direct): http://localhost:9000/api/agent/chat");
 console.log("📦 Models: http://localhost:9000/api/models");
