@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
-const API_BASE = "http://localhost:9001";
+// Use host IP instead of localhost for Docker
+const API_BASE = import.meta.env.VITE_API_URL || "http://192.168.0.111:9001";
 
 function App() {
   const [activeTab, setActiveTab] = useState("langgraph");
@@ -14,6 +15,7 @@ function App() {
   const [currentConfig, setCurrentConfig] = useState<any>(null);
 
   useEffect(() => {
+    console.log("API_BASE:", API_BASE);
     fetchStats();
     fetchRules();
     fetchKB();
@@ -21,30 +23,47 @@ function App() {
   }, []);
 
   const fetchStats = async () => {
-    const res = await fetch(`${API_BASE}/api/admin/stats`);
-    setStats(await res.json());
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/stats`);
+      setStats(await res.json());
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+    }
   };
 
   const fetchRules = async () => {
-    const res = await fetch(`${API_BASE}/api/auto-reply/rules`);
-    setRules(await res.json());
+    try {
+      const res = await fetch(`${API_BASE}/api/auto-reply/rules`);
+      setRules(await res.json());
+    } catch (error) {
+      console.error("Failed to fetch rules:", error);
+    }
   };
 
   const fetchKB = async () => {
-    const res = await fetch(`${API_BASE}/api/knowledge`);
-    setKbItems(await res.json());
+    try {
+      const res = await fetch(`${API_BASE}/api/knowledge`);
+      setKbItems(await res.json());
+    } catch (error) {
+      console.error("Failed to fetch KB:", error);
+    }
   };
 
   const fetchModels = async () => {
-    const res = await fetch(`${API_BASE}/api/models`);
-    const data = await res.json();
-    setModels(data.models);
-    setCurrentConfig(data.currentConfig);
+    try {
+      const res = await fetch(`${API_BASE}/api/models`);
+      const data = await res.json();
+      setModels(data.models);
+      setCurrentConfig(data.currentConfig);
+    } catch (error) {
+      console.error("Failed to fetch models:", error);
+    }
   };
 
   const testLangGraph = async () => {
     setLoading(true);
     try {
+      console.log("Calling LangGraph API:", `${API_BASE}/api/langgraph/process`);
       const res = await fetch(`${API_BASE}/api/langgraph/process`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,9 +73,11 @@ function App() {
           pageId: "frontend_page"
         })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setTestResponse(await res.json());
     } catch (error) {
-      setTestResponse({ error: error instanceof Error ? error.message : "Unknown error" });
+      console.error("LangGraph error:", error);
+      setTestResponse({ error: error instanceof Error ? error.message : "Unknown error", source: "error" });
     }
     setLoading(false);
   };
@@ -72,9 +93,11 @@ function App() {
           conversationHistory: []
         })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setTestResponse(await res.json());
     } catch (error) {
-      setTestResponse({ error: error instanceof Error ? error.message : "Unknown error" });
+      console.error("LLM Agent error:", error);
+      setTestResponse({ error: error instanceof Error ? error.message : "Unknown error", source: "error" });
     }
     setLoading(false);
   };
@@ -87,9 +110,11 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: testMessage })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setTestResponse(await res.json());
     } catch (error) {
-      setTestResponse({ error: error instanceof Error ? error.message : "Unknown error" });
+      console.error("Auto-reply error:", error);
+      setTestResponse({ error: error instanceof Error ? error.message : "Unknown error", source: "error" });
     }
     setLoading(false);
   };
@@ -99,11 +124,11 @@ function App() {
       <header style={{ background: "#1E3A5F", color: "white", padding: "20px" }}>
         <h1 style={{ margin: 0 }}>🤖 FB Agent Dashboard v0.2.0</h1>
         <p style={{ margin: "5px 0 0", opacity: 0.8 }}>LangChain + LangGraph Integration</p>
-        {currentConfig && (
-          <div style={{ marginTop: "10px", fontSize: "14px", background: "rgba(255,255,255,0.1)", padding: "10px", borderRadius: "8px" }}>
-            📦 Model: <strong>{currentConfig.provider}/{currentConfig.model}</strong> | Temp: {currentConfig.temperature}
-          </div>
-        )}
+        <div style={{ marginTop: "10px", fontSize: "13px", background: "rgba(255,255,255,0.1)", padding: "10px", borderRadius: "8px" }}>
+          🔗 API: <strong>{API_BASE}</strong> | 
+          📦 Model: <strong>{currentConfig?.provider}/{currentConfig?.model}</strong> | 
+          Temp: {currentConfig?.temperature}
+        </div>
       </header>
 
       <nav style={{ background: "white", padding: "10px 20px", borderBottom: "1px solid #ddd", display: "flex", flexWrap: "wrap", gap: "5px" }}>

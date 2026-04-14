@@ -39,10 +39,10 @@ services:
       - PORT=9000
       - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/fbagent
       - REDIS_URL=redis://redis:6379
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
-      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+      - LLM_PROVIDER=${LLM_PROVIDER:-deepseek}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-chat}
       - LLM_API_KEY=${LLM_API_KEY:-}
-      - LLM_BASE_URL=${LLM_BASE_URL:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.deepseek.com}
       - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.7}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
@@ -65,7 +65,7 @@ services:
       dockerfile: Dockerfile
     container_name: fbagent-frontend
     environment:
-      - VITE_API_URL=http://localhost:9001
+      - VITE_API_URL=http://192.168.0.111:9001
     ports:
       - "3000:3000"
     volumes:
@@ -83,8 +83,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/fbagent
       - REDIS_URL=redis://redis:6379
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
-      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+      - LLM_PROVIDER=${LLM_PROVIDER:-deepseek}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-chat}
       - LLM_API_KEY=${LLM_API_KEY:-}
     depends_on:
       - postgres
